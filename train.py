@@ -7,7 +7,6 @@ from sugar_extractors.coarse_mesh import extract_mesh_from_coarse_sugar
 from sugar_trainers.refine import refined_training
 from sugar_extractors.refined_mesh import extract_mesh_and_texture_from_refined_sugar
 
-
 class AttrDict(dict):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -112,7 +111,7 @@ if __name__ == "__main__":
         print('Will export a UV-textured mesh as an .obj file.')
     if args.export_ply:
         print('Will export a ply file with the refined 3D Gaussians at the end of the training.')
-    
+
     # ----- Optimize coarse SuGaR -----
     coarse_args = AttrDict({
         'checkpoint_path': args.checkpoint_path,
@@ -125,17 +124,8 @@ if __name__ == "__main__":
         'gpu': args.gpu,
         'white_background': args.white_background,
     })
-    if args.regularization_type == 'sdf':
-        coarse_sugar_path = coarse_training_with_sdf_regularization(coarse_args)
-    elif args.regularization_type == 'density':
-        coarse_sugar_path = coarse_training_with_density_regularization(coarse_args)
-    elif args.regularization_type == 'dn_consistency':
-        coarse_sugar_path = coarse_training_with_density_regularization_and_dn_consistency(coarse_args)
-    else:
-        raise ValueError(f'Unknown regularization type: {args.regularization_type}')
-    
-    
-    # ----- Extract mesh from coarse SuGaR -----
+    coarse_sugar_path = coarse_training_with_density_regularization(coarse_args)
+        # ----- Extract mesh from coarse SuGaR -----
     coarse_mesh_args = AttrDict({
         'scene_path': args.scene_path,
         'checkpoint_path': args.checkpoint_path,
@@ -155,8 +145,7 @@ if __name__ == "__main__":
         'use_vanilla_3dgs': False,
     })
     coarse_mesh_path = extract_mesh_from_coarse_sugar(coarse_mesh_args)[0]
-    
-    
+
     # ----- Refine SuGaR -----
     refined_args = AttrDict({
         'scene_path': args.scene_path,
@@ -176,8 +165,8 @@ if __name__ == "__main__":
         'white_background': args.white_background,
     })
     refined_sugar_path = refined_training(refined_args)
-    
-    
+
+"""
     # ----- Extract mesh and texture from refined SuGaR -----
     if args.export_uv_textured_mesh:
         refined_mesh_args = AttrDict({
@@ -195,4 +184,4 @@ if __name__ == "__main__":
             'postprocess_iterations': args.postprocess_iterations,
         })
         refined_mesh_path = extract_mesh_and_texture_from_refined_sugar(refined_mesh_args)
-        
+"""

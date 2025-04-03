@@ -8,6 +8,7 @@ from sugar_scene.gs_model import GaussianSplattingWrapper
 from sugar_scene.sugar_model import SuGaR
 from sugar_utils.general_utils import str2bool
 from sugar_utils.spherical_harmonics import SH2RGB
+from gaussian_splatting.scene.gaussian_model import GaussianModel
 
 from rich.console import Console
 
@@ -183,6 +184,24 @@ def extract_mesh_from_coarse_sugar(args):
         sugar.load_state_dict(checkpoint['state_dict'])
     sugar.eval()
     
+    with torch.no_grad():
+        if not use_vanilla_3dgs:
+            CONSOLE.print("Converting SuGaR model back to regular gaussians...")
+            # Create new GaussianModel with the same parameters as the SuGaR model
+            temp = GaussianModel(sh_degree=sugar.sh_levels - 1)
+            temp._xyz = sugar._points.detach()
+            temp._features_dc = sugar._sh_coordinates_dc.detach()
+            temp._features_rest = sugar._sh_coordinates_rest.detach()
+            temp._features_base_color = sugar._features_base_color.detach()
+            temp._features_roughness = sugar._features_roughness.detach()
+            temp._opacity = sugar.strengths.detach()
+            temp._scaling = sugar._scales.detach()
+            temp._rotation = sugar._quaternions.detach()
+            temp.save_ply("./SUGAR.ply")
+
+
+            CONSOLE.print("Conversion completed.")
+
     CONSOLE.print("Coarse model loaded.")
     CONSOLE.print("Coarse model parameters:")
     for name, param in sugar.named_parameters():
@@ -786,7 +805,9 @@ def extract_mesh_from_coarse_sugar(args):
                 )
         sugar_mesh_path = os.path.join(mesh_output_dir, sugar_mesh_path)
         o3d.io.write_triangle_mesh(sugar_mesh_path, decimated_o3d_mesh, write_triangle_uvs=True, write_vertex_colors=True, write_vertex_normals=True)
+        sugar_texture_path = sugar_mesh_path.replace(".ply", ".png")
+        o3d.io.write_image(sugar_texture_path, decimated_o3d_mesh.textures)
         CONSOLE.print("Mesh saved at", sugar_mesh_path)
         all_sugar_mesh_paths.append(sugar_mesh_path)
-        
+
     return all_sugar_mesh_paths
